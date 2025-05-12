@@ -1,0 +1,89 @@
+
+
+#define TILE_SIZE 80
+#define MAX_ROWS 100
+#define MAX_COLS 100
+
+int map[MAX_ROWS][MAX_COLS];
+int rows = 0, cols = 0;
+
+void lire_matrice(const char *filename) {
+    FILE *file = fopen(filename, "r");
+    if (!file) {
+        fprintf(stderr, "Erreur ouverture du fichier %s\n", filename);
+        exit(1);
+    }
+
+    int val;
+    char line[1024];
+    while (fgets(line, sizeof(line), file)) {
+        int current_col = 0;
+        char *ptr = line;
+        while (sscanf(ptr, "%d", &val) == 1) {
+            map[rows][current_col++] = val;
+            while (*ptr != ' ' && *ptr != '\0') ptr++;
+            while (*ptr == ' ') ptr++;
+        }
+        if (current_col > cols) cols = current_col;
+        rows++;
+    }
+
+    fclose(file);
+}
+
+void dessiner_matrice() {
+    for (int y = 0; y < rows; y++) {
+        for (int x = 0; x < cols; x++) {
+            ALLEGRO_COLOR couleur;
+            switch (map[y][x]) {
+                case 0: couleur = al_map_rgb(34, 139, 34); break; // herbe (vert)
+                case 1: couleur = al_map_rgb(0, 191, 255); break; // eau (bleu)
+                case 2: couleur = al_map_rgb(139, 69, 19); break; // chemin (marron)
+                default: couleur = al_map_rgb(128, 128, 128); break; // inconnu
+            }
+
+            al_draw_filled_rectangle(
+                x * TILE_SIZE,
+                y * TILE_SIZE,
+                (x + 1) * TILE_SIZE,
+                (y + 1) * TILE_SIZE,
+                couleur
+            );
+
+            // Optionnel : contour
+            al_draw_rectangle(
+                x * TILE_SIZE,
+                y * TILE_SIZE,
+                (x + 1) * TILE_SIZE,
+                (y + 1) * TILE_SIZE,
+                al_map_rgb(0, 0, 0), 1
+            );
+        }
+    }
+}
+
+int main() {
+    if (!al_init()) {
+        fprintf(stderr, "Erreur Allegro\n");
+        return -1;
+    }
+
+    al_init_primitives_addon();
+
+    lire_matrice("map1.txt");
+
+    ALLEGRO_DISPLAY *display = al_create_display(cols * TILE_SIZE, rows * TILE_SIZE);
+    if (!display) {
+        fprintf(stderr, "Erreur création fenêtre\n");
+        return -1;
+    }
+
+    al_clear_to_color(al_map_rgb(0, 0, 0));
+    dessiner_matrice();
+    al_flip_display();
+
+    al_rest(5.0); // pour voir la map
+
+    al_destroy_display(display);
+    return 0;
+}
